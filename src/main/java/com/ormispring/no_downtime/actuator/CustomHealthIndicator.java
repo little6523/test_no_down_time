@@ -17,7 +17,6 @@ public class CustomHealthIndicator implements HealthIndicator {
         }
     }
 
-
     private boolean checkSomeCondition() {
         long freeMemory = Runtime.getRuntime().freeMemory();
         long totalMemory = Runtime.getRuntime().totalMemory();
