@@ -20,6 +20,7 @@ public class TestController {
         WebServer webServer = webServerAppContext.getWebServer();
         int port = webServer.getPort();
         String response = RESPONSE_BODY_MESSAGE + "\n실행 중인 포트는 " + port + "입니다.";
+
         return ResponseEntity.ok(response);
     }
 }
