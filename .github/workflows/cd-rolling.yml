@@ -3,7 +3,7 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - bluegreen
+      - rolling
 
 jobs:
   build:
@@ -34,7 +34,6 @@ jobs:
         with:
           name: build-file
           path: build/libs/*.jar
-
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -53,12 +52,32 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: Move existing JAR files to old_build folder with timestamp
+        run: |
+          ssh ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "
+          TIMESTAMP=$(date +\"%Y%m%d%H%M%S\");
+          mkdir -p ~/cicd/old_build && for f in ~/cicd/app-*.jar; do
+            if [ -f \$f ]; then
+              mv \$f ~/cicd/old_build/\$(basename \$f .jar)-\$TIMESTAMP.jar;
+            fi;
+          done"
       - name: Rename and transfer artifact
         run: |
-          mv *.jar app.jar
-          scp app.jar ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }}:~/cicd/
-      - name: Execute remote commands
+          JAR_FILE=$(ls *.jar | head -n 1)
+          cp $JAR_FILE app-8081.jar
+          cp $JAR_FILE app-8082.jar
+          scp app-8081.jar ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }}:~/cicd/
+          scp app-8082.jar ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }}:~/cicd/
+
+      - name: Stop existing applications
         run: |
           ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo fuser -k 8081/tcp || true"
           ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo fuser -k 8082/tcp || true"
-          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo nohup /usr/bin/java -jar -Dserver.port=8081 ~/cicd/app.jar > ~/cicd/nohup.log 2>&1 &"
+
+      - name: Start application on port 8081
+        run: |
+          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo nohup /usr/bin/java -jar -Dserver.port=8081 ~/cicd/app-8081.jar > ~/cicd/nohup-8081.log 2>&1 &"
+
+      - name: Start application on port 8082
+        run: |
+          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo nohup /usr/bin/java -jar -Dserver.port=8082 ~/cicd/app-8082.jar > ~/cicd/nohup-8082.log 2>&1 &"
