@@ -58,5 +58,7 @@ jobs:
 
       - name: Execute remote command
         run: |
-          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo chmod +x ~/cicd/canary/deploy.sh"
-          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo ~/cicd/canary/deploy.sh"
+          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} 
+          "sudo chmod +x ~/cicd/canary/deploy.sh"
+          ssh -v ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} "sudo ~
+          /cicd/canary/deploy.sh"
